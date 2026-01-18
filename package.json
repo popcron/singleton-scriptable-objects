@@ -1,6 +1,6 @@
 {
   "name": "com.popcron.singleton-scriptable-objects",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Facilitates the use of singleton pattern with ScriptableObjects in Unity.",
   "author": {
     "name": "popcron",

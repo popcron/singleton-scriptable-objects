@@ -4,35 +4,57 @@ using UnityEngine;
 
 namespace SingletonScriptableObjects
 {
-    internal static class SingletonScriptableObjects
+    public static class SingletonScriptableObjects
     {
-        public static void Register(ScriptableObject singletonScriptableObject)
-        {
-            EnsureIsPreloaded(singletonScriptableObject);
-        }
+        public static Action<ScriptableObject>? onRegister;
+        public static Action<ScriptableObject>? onUnregister;
+        private static readonly List<ScriptableObject> singletons = new();
 
-        public static void Unregister(ScriptableObject singletonScriptableObject)
-        {
-        }
+        /// <summary>
+        /// All singleton <see cref="ScriptableObject"/> instances.
+        /// </summary>
+        public static IReadOnlyList<ScriptableObject> Singletons => singletons;
 
-        public static void EnsureIsPreloaded(ScriptableObject singletonScriptableObject)
+        internal static void Register(ScriptableObject scriptableObject)
         {
-            if (!PreloadedAssets.Contains(singletonScriptableObject))
+            if (EnsureIsPreloaded(scriptableObject))
             {
-                if (PreloadedAssets.ContainsWithType(singletonScriptableObject.GetType()))
-                {
-                    Debug.LogError($"A different instance of the singleton ScriptableObject of type {singletonScriptableObject.GetType().FullName} is already registered as a preloaded asset. Only one instance of a singleton ScriptableObject type can be registered at a time.", singletonScriptableObject);
-                    return;
-                }
-
-                PreloadedAssets.RemoveWithType(singletonScriptableObject.GetType());
-                PreloadedAssets.Add(singletonScriptableObject);
+                singletons.Add(scriptableObject);
+                onRegister?.Invoke(scriptableObject);   
             }
         }
 
-        public static bool IsSingleton(ScriptableObject singletonScriptableObject)
+        internal static void Unregister(ScriptableObject scriptableObject)
         {
-            Type currentType = singletonScriptableObject.GetType();
+            if (singletons.Remove(scriptableObject))
+            {
+                onUnregister?.Invoke(scriptableObject);
+            }
+        }
+
+        internal static bool EnsureIsPreloaded(ScriptableObject scriptableObject)
+        {
+            if (!PreloadedAssets.Contains(scriptableObject))
+            {
+                if (PreloadedAssets.ContainsWithType(scriptableObject.GetType()))
+                {
+                    Debug.LogError($"A different instance of the singleton ScriptableObject of type {scriptableObject.GetType().FullName} is already registered as a preloaded asset. Only one instance of a singleton ScriptableObject type can be registered at a time.", scriptableObject);
+                    return false;
+                }
+
+                PreloadedAssets.RemoveWithType(scriptableObject.GetType());
+                PreloadedAssets.Add(scriptableObject);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Checks if the given <paramref name="scriptableObject"/> is a singleton ScriptableObject.
+        /// </summary>
+        public static bool IsSingleton(ScriptableObject scriptableObject)
+        {
+            Type currentType = scriptableObject.GetType();
             while (currentType != typeof(ScriptableObject))
             {
                 if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(SingletonScriptableObject<>))
