@@ -60,7 +60,7 @@ namespace UnityEngine
         }
 
 #if UNITY_EDITOR
-        private static bool TryFindSingleton([NotNullWhen(true)] out T? foundSingleton)
+        public static bool TryFindSingleton([NotNullWhen(true)] out T? foundSingleton)
         {
             if (PreloadedAssets.TryGet(out T? preloadedSingleton))
             {
@@ -68,11 +68,10 @@ namespace UnityEngine
                 return true;
             }
 
-            string[] guids = UnityEditor.AssetDatabase.FindAssets($"t:{typeof(T).FullName}");
-            foreach (string guid in guids)
+            GUID[] guids = UnityEditor.AssetDatabase.FindAssetGUIDs($"t:{typeof(T).FullName}");
+            foreach (GUID guid in guids)
             {
-                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
-                T? asset = UnityEditor.AssetDatabase.LoadAssetAtPath<T>(path);
+                T? asset = UnityEditor.AssetDatabase.LoadAssetByGUID<T>(guid);
                 if (asset != null)
                 {
                     foundSingleton = asset;
@@ -82,6 +81,13 @@ namespace UnityEngine
 
             foundSingleton = null;
             return false;
+        }
+#else
+        [Obsolete("TryFindSingleton is only available in the Unity Editor")]
+        public static bool TryFindSingleton([NotNullWhen(true)] out T? foundSingleton)
+        {
+            foundSingleton = singleton;
+            return foundSingleton != null;
         }
 #endif
     }
